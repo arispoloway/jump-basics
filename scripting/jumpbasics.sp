@@ -1,17 +1,12 @@
 /*
 
 	TODO:
-		* Add native for setting reset location
-		* Add forward for /r call
 		* File saving system for user saves
-		* Messages for actions
-		* String override some messages / have native to change prefix
-			to all strings ex: "[JA]" + ....
-
+		* Support for messages as to why regen/tele is blocked
+		* Test all natives and forwards
+		* Check all messages
 
 */
-
-
 
 
 #pragma semicolon 1
@@ -44,7 +39,6 @@ new Handle:g_hSentryLevel;
 new Handle:g_hCheapObjects;
 new Handle:g_hAmmoCheat;
 new Handle:g_hFastBuild;
-new Handle:hCvarBranch;
 new Handle:hArray_NoFuncRegen;
 
 new Handle:g_hHealthRegenOnForward;
@@ -52,6 +46,7 @@ new Handle:g_hHealthRegenOffForward;
 new Handle:g_hAmmoRegenOnForward;
 new Handle:g_hAmmoRegenOffForward;
 new Handle:g_hTeleportForward;
+new Handle:g_hResetForward;
 
 new bool:g_bHPRegenEnabled[MAXPLAYERS+1];
 new bool:g_bAmmoRegenEnabled[MAXPLAYERS+1];
@@ -62,9 +57,16 @@ new bool:g_bAmmoRegen[MAXPLAYERS+1];
 
 new Float:g_fOrigin[MAXPLAYERS+1][3];
 new Float:g_fAngles[MAXPLAYERS+1][3];
+
+new Float:g_ResetLoc[3];
+new Float:g_ResetAng[3];
+
+
 new g_iMapClass = -1;
 new g_iLockCPs = 1;
 new g_iCPs;
+
+new String:g_MessagePrefix[32] = "";
 
 #include "jumpbasics/skeys.sp"
 #include "jumpbasics/sound.sp"
@@ -95,6 +97,7 @@ public OnPluginStart()
 	g_hHealthRegenOffForward = CreateGlobalForward("OnHealthRegenOff", ET_Event, Param_Cell);
 	g_hAmmoRegenOnForward = CreateGlobalForward("OnAmmoRegenOn", ET_Event, Param_Cell);
 	g_hAmmoRegenOffForward = CreateGlobalForward("OnAmmoRegenOff", ET_Event, Param_Cell);
+	g_hResetForward = CreateGlobalForward("OnReset", ET_Event, Param_Cell);
 	g_hTeleportForward = CreateGlobalForward("OnTeleport", ET_Event, Param_Cell, Param_Float, Param_Float, Param_Float, Param_Float, Param_Float, Param_Float);
 
 
@@ -172,6 +175,8 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("HealthRegen_Off", Native_HealthRegenOff);
 	CreateNative("Teleports_On", Native_TeleportsOn);
 	CreateNative("Teleports_Off", Native_TeleportsOff);
+	CreateNative("SetStringPrefix", Native_SetStringPrefix);
+	CreateNative("SetResetLoc", Native_SetResetLoc);
 
 	return APLRes_Success;
 }
@@ -228,6 +233,22 @@ public Native_TeleportsOff(Handle:plugin, numparams){
 	return true;
 }
 
+public Native_SetStringPrefix(Handle:plugin, numparams){
+	new String:prefix[256];
+	GetNativeString(1, prefix, sizeof(prefix));
+	Format(g_MessagePrefix, sizeof(g_MessagePrefix), "%s ", prefix);
+	return true;
+}
+
+public Native_SetResetLoc(Handle:plugin, numparams){
+	g_ResetLoc[0] = GetNativeCell(1);
+	g_ResetLoc[1] = GetNativeCell(2);
+	g_ResetLoc[2] = GetNativeCell(3);
+	g_ResetAng[0] = GetNativeCell(4);
+	g_ResetAng[1] = GetNativeCell(5);
+	g_ResetAng[2] = GetNativeCell(6);
+	return true;
+}
 
 
 
@@ -294,6 +315,13 @@ public OnMapStart()
 
 		Hook_Func_regenerate();
 
+		g_ResetLoc[0] = 0.0;
+		g_ResetLoc[1] = 0.0;
+		g_ResetLoc[2] = 0.0;
+		g_ResetAng[0] = 0.0;
+		g_ResetAng[1] = 0.0;
+		g_ResetAng[2] = 0.0;
+
 	}
 }
 
@@ -341,8 +369,9 @@ public OnClientPutInServer(client)
 public bool:EnableAmmoRegen(client){
 	if (!IsValidClient(client)) { return false; }
 	if(!g_bAmmoRegenEnabled[client]) { return false; }
-	PrintToChat(client, "turned on");
 	g_bAmmoRegen[client] = true;
+
+	PrintToChat(client, "%sAmmo regen turned on", g_MessagePrefix);
 
 	Call_StartForward(g_hAmmoRegenOnForward);
 	Call_PushCell(client);
@@ -356,6 +385,8 @@ public bool:EnableHealthRegen(client){
 	if(!g_bHPRegenEnabled[client]) { return false; }
 	g_bHPRegen[client] = true;
 
+	PrintToChat(client, "%sHealth regen turned on", g_MessagePrefix);
+
 	Call_StartForward(g_hHealthRegenOnForward);
 	Call_PushCell(client);
 	Call_Finish();
@@ -366,6 +397,8 @@ public bool:DisableAmmoRegen(client){
 	if (!IsValidClient(client)) { return false; }
 	g_bAmmoRegen[client] = false;
 
+	PrintToChat(client, "%sAmmo regen turned off", g_MessagePrefix);
+
 	Call_StartForward(g_hAmmoRegenOffForward);
 	Call_PushCell(client);
 	Call_Finish();
@@ -375,6 +408,8 @@ public bool:DisableAmmoRegen(client){
 public bool:DisableHealthRegen(client){
 	if (!IsValidClient(client)) { return false; }
 	g_bHPRegen[client] = false;
+
+	PrintToChat(client, "%sHealth regen turned off", g_MessagePrefix);
 
 	Call_StartForward(g_hHealthRegenOffForward);
 	Call_PushCell(client);
@@ -493,6 +528,12 @@ public Action:cmdReset(client, args)
 
 		SendToStart(client);
 	}
+	PrintToChat(client, "%sPosition reset", g_MessagePrefix);
+
+	Call_StartForward(g_hResetForward);
+	Call_PushCell(client);
+	Call_Finish();
+
 	return Plugin_Handled;
 }
 
@@ -502,6 +543,9 @@ public Action:cmdTele(client, args)
 	if (!GetConVarBool(g_hPluginEnabled)) { return Plugin_Handled; }
 
 	Teleport(client);
+
+	PrintToChat(client, "%sTeleported to save", g_MessagePrefix);
+
 	return Plugin_Handled;
 }
 
@@ -509,6 +553,28 @@ public Action:cmdSave(client, args)
 {
 	if (!GetConVarBool(g_hPluginEnabled)) { return Plugin_Handled; }
 	SaveLoc(client);
+
+	PrintToChat(client, "%sLocation saved", g_MessagePrefix);
+
+	return Plugin_Handled;
+}
+
+public Action:cmdRestart(client, args)
+{
+	if (!IsValidClient(client) || IsClientObserver(client) || !GetConVarBool(g_hPluginEnabled))
+	{
+		return Plugin_Handled;
+	}
+
+	EraseLocs(client);
+	SendToStart(client);
+
+	Call_StartForward(g_hResetForward);
+	Call_PushCell(client);
+	Call_Finish();
+
+	PrintToChat(client, "%sLocation reset and save wiped", g_MessagePrefix);
+
 	return Plugin_Handled;
 }
 
@@ -719,19 +785,7 @@ LockCPs()
 		g_iCPs++;
 	}
 }
-public Action:cmdRestart(client, args)
-{
-	if (!IsValidClient(client) || IsClientObserver(client) || !GetConVarBool(g_hPluginEnabled))
-	{
-		return Plugin_Handled;
-	}
 
-	EraseLocs(client);
-
-	TF2_RespawnPlayer(client);
-
-	return Plugin_Handled;
-}
 
 SendToStart(client)
 {
@@ -740,8 +794,12 @@ SendToStart(client)
 		return;
 	}
 
-
-	TF2_RespawnPlayer(client);
+	if(g_ResetLoc[0] == 0.0){
+		TF2_RespawnPlayer(client);
+	} else {
+		new Float:g_vVelocity[3];
+		TeleportEntity(client, g_ResetLoc, g_ResetAng, g_vVelocity);
+	}
 
 	PrintToChat(client, "asdfdfsf");
 }

@@ -42,6 +42,15 @@ forward OnAmmoRegenOn(client);
 forward OnAmmoRegenOff(client);
 
 /**
+ * Called when a client resets their location
+ *
+ * @param client	The client.
+ *
+ * @noreturn
+ */
+forward OnReset(client);
+
+/**
  * Called when a client teleports
  *
  * @param client	The client.
@@ -55,6 +64,8 @@ forward OnAmmoRegenOff(client);
  * @noreturn
  */
 forward OnTeleport(client, Float:x, Float:y, Float:z, Float:yaw, Float:pitch, Float:roll);
+
+
 
 
 /*
@@ -132,3 +143,26 @@ native bool:TeleportsOn(client);
  * @return True on success, false on failure
  */
 native bool:TeleportsOff(client);
+
+/**
+ * Sets a string to begin all messages from the plugin with
+ *
+ * @param prefix        The new prefix for messages
+ *
+ * @return True on success, false on failure
+ */
+native bool:SetStringPrefix(String:prefix[]);
+
+/**
+ * Sets a string to begin all messages from the plugin with
+ *
+ * @param x     	The reset x position.
+ * @param y     	The reset y position.
+ * @param z     	The reset z position.
+ * @param yaw     	The reset yaw.
+ * @param pitch	       	The reset pitch.
+ * @param roll  	The reset roll.
+ *
+ * @return True on success, false on failure
+ */
+native bool:SetResetLoc(Float:x, Float:y, Float:z, Float:yaw, Float:pitch, Float:roll);

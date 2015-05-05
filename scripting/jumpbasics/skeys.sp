@@ -145,10 +145,10 @@ public Action:cmdGetClientKeys(client, args)
 	if (g_bGetClientKeys[client])
 	{
 		g_bGetClientKeys[client] = false;
-		PrintToChat(client, "Showkeys_Off");
+		PrintToChat(client, "%sSkeys turned off", g_MessagePrefix);
 	} else {
 		g_bGetClientKeys[client] = true;
-		PrintToChat(client, "Showkeys_On");
+		PrintToChat(client, "%sSkeys turned on", g_MessagePrefix);
 	}
 	return Plugin_Handled;
 }
@@ -158,7 +158,7 @@ public Action:cmdChangeSkeysColor(client, args)
 	decl String:red[4], String:blue[4], String:green[4], String:steamid[32];
 	if (args < 1)
 	{
-		PrintToChat(client, "SkeysColor_Help");
+		PrintToChat(client, "%sThis command requires 3 arguments", g_MessagePrefix);
 		return Plugin_Handled;
 	}
 
@@ -166,7 +166,7 @@ public Action:cmdChangeSkeysColor(client, args)
 	GetClientAuthId(client, AuthId_Steam2, steamid, sizeof(steamid));
 	if (!IsStringNumeric(red) || !IsStringNumeric(blue) || !IsStringNumeric(green))
 	{
-		PrintToChat(client, "skeys something or other");
+		PrintToChat(client, "%sThe colors must be numbers from 0-255", g_MessagePrefix);
 		return Plugin_Handled;
 	}
 
@@ -179,7 +179,7 @@ public Action:cmdChangeSkeysColor(client, args)
 public Action:cmdChangeSkeysLoc(client, args){
 	if (args != 2)
 	{
-		PrintToChat(client, "\x01[\x03JA\x01] This command requires 2 arguments");
+		PrintToChat(client, "%sThis command requires 2 arguments", g_MessagePrefix);
 		return Plugin_Handled;
 	}
 
@@ -191,7 +191,7 @@ public Action:cmdChangeSkeysLoc(client, args){
 	xLoc = StringToFloat(arg1);
 	yLoc = StringToFloat(arg2);
 	if(xLoc >= 1.0 || yLoc >= 1.0 || xLoc <= 0.0 || yLoc <= 0.0){
-		PrintToChat(client, "\x01[\x03JA\x01] Both arguments must be between 0 and 1");
+		PrintToChat(client, "%sBoth arguments must be between 0 and 1", g_MessagePrefix);
 		return Plugin_Handled;
 	}
 	g_iSkeysXLoc[client] = xLoc;
