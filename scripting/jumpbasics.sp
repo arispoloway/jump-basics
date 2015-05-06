@@ -1,11 +1,10 @@
 /*
 
 	TODO:
+		* Change to per client reset location setting
 		* File saving system for user saves
 		* Support for messages as to why regen/tele is blocked
 		* Test all natives and forwards
-		* Check all messages
-
 */
 
 
@@ -528,7 +527,7 @@ public Action:cmdReset(client, args)
 
 		SendToStart(client);
 	}
-	PrintToChat(client, "%sPosition reset", g_MessagePrefix);
+	PrintToChat(client, "%sLocation reset", g_MessagePrefix);
 
 	Call_StartForward(g_hResetForward);
 	Call_PushCell(client);
@@ -544,8 +543,6 @@ public Action:cmdTele(client, args)
 
 	Teleport(client);
 
-	PrintToChat(client, "%sTeleported to save", g_MessagePrefix);
-
 	return Plugin_Handled;
 }
 
@@ -553,8 +550,6 @@ public Action:cmdSave(client, args)
 {
 	if (!GetConVarBool(g_hPluginEnabled)) { return Plugin_Handled; }
 	SaveLoc(client);
-
-	PrintToChat(client, "%sLocation saved", g_MessagePrefix);
 
 	return Plugin_Handled;
 }
@@ -601,9 +596,9 @@ Teleport(client)
 	}
 
 	if(!IsPlayerAlive(client))
-		PrintToChat(client, "ur ded");
+		PrintToChat(client, "%sYou cannot teleport while dead", g_MessagePrefix);
 	else if(g_fOrigin[client][0] == 0.0)
-		PrintToChat(client, "no save");
+		PrintToChat(client, "%sYou do not have a save", g_MessagePrefix);
 	else
 	{
 		TeleportEntity(client, g_fOrigin[client], g_fAngles[client], g_vVelocity);
@@ -618,7 +613,8 @@ Teleport(client)
 		Call_PushFloat(g_fAngles[client][2]);
 		Call_Finish();
 
-		PrintToChat(client, "success");
+		PrintToChat(client, "%sTeleported to save", g_MessagePrefix);
+
 	}
 }
 
@@ -627,18 +623,18 @@ SaveLoc(client)
 	if (!GetConVarBool(g_hPluginEnabled)) { return; }
 
 	if(!IsPlayerAlive(client))
-		PrintToChat(client, "no save ded");
+		PrintToChat(client, "%sYou cannot save while dead", g_MessagePrefix);
 	else if(!(GetEntityFlags(client) & FL_ONGROUND))
-		PrintToChat(client, "u in air");
+		PrintToChat(client, "%sYou cannot save in the air", g_MessagePrefix);
 	else if(GetEntProp(client, Prop_Send, "m_bDucked") == 1)
-		PrintToChat(client, "u ducked");
+		PrintToChat(client, "%sYou cannot save while crouched", g_MessagePrefix);
 	else
 	{
 
 		GetClientAbsOrigin(client, g_fOrigin[client]);
 		GetClientAbsAngles(client, g_fAngles[client]);
 
-		PrintToChat(client, "saved");
+		PrintToChat(client, "%sLocation saved", g_MessagePrefix);
 	}
 }
 
@@ -801,7 +797,6 @@ SendToStart(client)
 		TeleportEntity(client, g_ResetLoc, g_ResetAng, g_vVelocity);
 	}
 
-	PrintToChat(client, "asdfdfsf");
 }
 
 stock String:GetClassname(class)
