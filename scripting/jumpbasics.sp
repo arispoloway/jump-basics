@@ -1,7 +1,6 @@
 /*
 
 	TODO:
-		* Change to per client reset location setting
 		* File saving system for user saves
 		* Support for messages as to why regen/tele is blocked
 		* Test all natives and forwards
@@ -57,8 +56,8 @@ new bool:g_bAmmoRegen[MAXPLAYERS+1];
 new Float:g_fOrigin[MAXPLAYERS+1][3];
 new Float:g_fAngles[MAXPLAYERS+1][3];
 
-new Float:g_ResetLoc[3];
-new Float:g_ResetAng[3];
+new Float:g_ResetLoc[MAXPLAYERS+1][3];
+new Float:g_ResetAng[MAXPLAYERS+1][3];
 
 
 new g_iMapClass = -1;
@@ -240,12 +239,13 @@ public Native_SetStringPrefix(Handle:plugin, numparams){
 }
 
 public Native_SetResetLoc(Handle:plugin, numparams){
-	g_ResetLoc[0] = GetNativeCell(1);
-	g_ResetLoc[1] = GetNativeCell(2);
-	g_ResetLoc[2] = GetNativeCell(3);
-	g_ResetAng[0] = GetNativeCell(4);
-	g_ResetAng[1] = GetNativeCell(5);
-	g_ResetAng[2] = GetNativeCell(6);
+	new client = GetNativeCell(1);
+	g_ResetLoc[client][0] = GetNativeCell(2);
+	g_ResetLoc[client][1] = GetNativeCell(3);
+	g_ResetLoc[client][2] = GetNativeCell(4);
+	g_ResetAng[client][0] = GetNativeCell(5);
+	g_ResetAng[client][1] = GetNativeCell(6);
+	g_ResetAng[client][2] = GetNativeCell(7);
 	return true;
 }
 
@@ -307,6 +307,12 @@ public OnMapStart()
 			g_bHPRegenEnabled[i] = true;
 			g_bAmmoRegenEnabled[i] = true;
 			g_bTeleportsEnabled[i] = true;
+			g_ResetLoc[i][0] = 0.0;
+			g_ResetLoc[i][1] = 0.0;
+			g_ResetLoc[i][2] = 0.0;
+			g_ResetAng[i][0] = 0.0;
+			g_ResetAng[i][1] = 0.0;
+			g_ResetAng[i][2] = 0.0;
 		}
 
 		// Change game rules to CP.
@@ -314,12 +320,7 @@ public OnMapStart()
 
 		Hook_Func_regenerate();
 
-		g_ResetLoc[0] = 0.0;
-		g_ResetLoc[1] = 0.0;
-		g_ResetLoc[2] = 0.0;
-		g_ResetAng[0] = 0.0;
-		g_ResetAng[1] = 0.0;
-		g_ResetAng[2] = 0.0;
+
 
 	}
 }
@@ -367,7 +368,10 @@ public OnClientPutInServer(client)
 
 public bool:EnableAmmoRegen(client){
 	if (!IsValidClient(client)) { return false; }
-	if(!g_bAmmoRegenEnabled[client]) { return false; }
+	if(!g_bAmmoRegenEnabled[client]) {
+		PrintToChat(client, "%sAmmo regen is currently blocked", g_MessagePrefix);
+		return false;
+	}
 	g_bAmmoRegen[client] = true;
 
 	PrintToChat(client, "%sAmmo regen turned on", g_MessagePrefix);
@@ -381,7 +385,10 @@ public bool:EnableAmmoRegen(client){
 }
 public bool:EnableHealthRegen(client){
 	if (!IsValidClient(client)) { return false; }
-	if(!g_bHPRegenEnabled[client]) { return false; }
+	if(!g_bHPRegenEnabled[client]) {
+		PrintToChat(client, "%sHealth regen is currently blocked", g_MessagePrefix);
+		return false;
+	}
 	g_bHPRegen[client] = true;
 
 	PrintToChat(client, "%sHealth regen turned on", g_MessagePrefix);
@@ -540,7 +547,10 @@ public Action:cmdReset(client, args)
 public Action:cmdTele(client, args)
 {
 	if (!GetConVarBool(g_hPluginEnabled)) { return Plugin_Handled; }
-
+	if (!g_bTeleportsEnabled[client]) {
+		PrintToChat(client, "%sTeleports are currently blocked", g_MessagePrefix);
+		return Plugin_Handled;
+	}
 	Teleport(client);
 
 	return Plugin_Handled;
@@ -790,11 +800,11 @@ SendToStart(client)
 		return;
 	}
 
-	if(g_ResetLoc[0] == 0.0){
+	if(g_ResetLoc[client][0] == 0.0){
 		TF2_RespawnPlayer(client);
 	} else {
 		new Float:g_vVelocity[3];
-		TeleportEntity(client, g_ResetLoc, g_ResetAng, g_vVelocity);
+		TeleportEntity(client, g_ResetLoc[client], g_ResetAng[client], g_vVelocity);
 	}
 
 }

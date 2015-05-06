@@ -154,8 +154,9 @@ native bool:TeleportsOff(client);
 native bool:SetStringPrefix(String:prefix[]);
 
 /**
- * Sets a string to begin all messages from the plugin with
+ * Sets the reset location for a client
  *
+ * @param client        The client to change the reset location for
  * @param x     	The reset x position.
  * @param y     	The reset y position.
  * @param z     	The reset z position.
@@ -165,4 +166,4 @@ native bool:SetStringPrefix(String:prefix[]);
  *
  * @return True on success, false on failure
  */
-native bool:SetResetLoc(Float:x, Float:y, Float:z, Float:yaw, Float:pitch, Float:roll);
+native bool:SetResetLoc(client, Float:x, Float:y, Float:z, Float:yaw, Float:pitch, Float:roll);
