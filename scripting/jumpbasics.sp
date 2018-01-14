@@ -691,7 +691,7 @@ stock bool:IsValidWeapon(iEntity)
 	return false;
 }
 
-stock ReSupply(client, iWeapon)
+stock ReSupply(iClient, iWeapon)
 {
 	if (!GetConVarBool(g_hPluginEnabled)) return;
 	if (!IsValidWeapon(iWeapon)) return;
