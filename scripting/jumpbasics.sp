@@ -658,6 +658,10 @@ public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:ang
 			ReSupply(client, g_iClientWeapons[client][0]);
 			ReSupply(client, g_iClientWeapons[client][1]);
 			ReSupply(client, g_iClientWeapons[client][2]);
+			
+			if (TF2_GetPlayerClass(client) == TFClass_Engineer){
+				SetEntProp(client, Prop_Data, "m_iAmmo", 200, 4, 3);
+			}
 		}
 		if (g_bHPRegen[client]){
 			new iMaxHealth = TF2_GetPlayerResourceData(client, TFResource_MaxHealth);
@@ -689,76 +693,107 @@ stock bool:IsValidWeapon(iEntity)
 
 stock ReSupply(client, iWeapon)
 {
-	if (!GetConVarBool(g_hPluginEnabled)) { return; }
-	if (!IsValidWeapon(iWeapon))
+	if (!GetConVarBool(g_hPluginEnabled)) return;
+	if (!IsValidWeapon(iWeapon)) return;
+	if (!IsValidClient(iClient) || !IsPlayerAlive(iClient)) return;	//Check if the client is valid and alive
+	
+	int iWepIndex = GetEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex");	//Grab the weapon index
+	char szClassname[128];
+	GetEntityClassname(iWeapon, szClassname, sizeof(szClassname));				//Grab the weapon's classname
+	
+	//Rocket Launchers
+	if (!StrContains(szClassname, "tf_weapon_rocketlauncher") || !StrContains(szClassname, "tf_weapon_particle_cannon")) //Check for Rocket Launchers
 	{
-		return;
-	}
-
-	// Primary Weapons
-	switch(GetEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex"))
-	{
-		// Rocket Launchers
-		case 18,205,127,513,800,809,658:
+		switch (iWepIndex)
 		{
-			SetEntProp(iWeapon, Prop_Data, "m_iClip1", 4);
-			SetAmmo(client, iWeapon, 20);
-		}
-		// Black box, Liberty launcher.
-		case 228, 414:
-		{
-			SetEntProp(iWeapon, Prop_Data, "m_iClip1", 3);
-			SetAmmo(client, iWeapon, 20);
-		}
-		// Rocket Jumper
-		case 237:
-		{
-			SetEntProp(iWeapon, Prop_Data, "m_iClip1", 4);
-			SetAmmo(client, iWeapon, 60);
-		}
-
-		// Ullapool caber
-		/* Removed
-		case 307:
-		{
-			if (GetConVarBool(g_hReloadUC))
+			case 441: //The Cow Mangler 5000
 			{
-				SetEntProp(iWeapon, Prop_Send, "m_bBroken", 0);
-				SetEntProp(iWeapon, Prop_Send, "m_iDetonated", 0);
+				SetEntPropFloat(iWeapon, Prop_Send, "m_flEnergy", 100.0);	//Cow Mangler uses Energy instead of ammo.
+			}
+			case 228, 1085: //Black Box
+			{
+				SetEntProp(iWeapon, Prop_Send, "m_iClip1", 3);
+			}
+			case 414: //Liberty Launcher
+			{
+				SetEntProp(iWeapon, Prop_Send, "m_iClip1", 5);
+			}
+			case 730: {} //Beggar's Bazooka - This is here so we don't keep refilling its clip infinitely.
+			default: //The default action for Rocket Launchers. This basically future proofs it for any new Rocket Launchers unless they have a totally different classname like the CM5K.
+			{
+				SetEntProp(iWeapon, Prop_Send, "m_iClip1", 4); //Technically we don't need to make extra cases for different clip sizes, since players are constantly ReSupply()'d, but whatever.
 			}
 		}
-		*/
-
-		// Stickybomb Launchers
-		case 20, 207:
+		GivePlayerAmmo(iClient, 100, view_as<int>(TFWeaponSlot_Primary)+1, false); //Refill the player's ammo supply to whatever the weapon's max is.
+	}
+	//Grenade Launchers
+	if (!StrContains(szClassname, "tf_weapon_grenadelauncher") || !StrContains(szClassname, "tf_weapon_cannon")) //Check for Stickybomb Launchers
+	{
+		switch (iWepIndex)
 		{
-			SetEntProp(iWeapon, Prop_Data, "m_iClip1", 8);
-			SetAmmo(client, iWeapon, 24);
+			case 308: // Loch-n-Load
+			{
+				SetEntProp(iWeapon, Prop_Send, "m_iClip1", 3);
+			}
+			default: //The default action for Grenade Launchers
+			{
+				SetEntProp(iWeapon, Prop_Send, "m_iClip1", 4);
+			}
 		}
-		// Sticky jumper
-		case 265:
+		GivePlayerAmmo(iClient, 100, view_as<int>(TFWeaponSlot_Primary)+1, false); //Refill the player's ammo supply to whatever the weapon's max is.
+	}
+	//Stickybomb Launchers
+	if (!StrContains(szClassname, "tf_weapon_pipebomblauncher")) //Check for Stickybomb Launchers
+	{
+		switch (iWepIndex)
 		{
-			SetEntProp(iWeapon, Prop_Data, "m_iClip1", 8);
-			SetAmmo(client, iWeapon, 72);
+			case 1150: //Quickiebomb Launcher
+			{
+				SetEntProp(iWeapon, Prop_Send, "m_iClip1", 4);
+			}
+			default: //The default action for Stickybomb Launchers
+			{
+				SetEntProp(iWeapon, Prop_Send, "m_iClip1", 8);
+			}
 		}
-		// Scottish Resistance
-		case 130:
+		GivePlayerAmmo(iClient, 100, view_as<int>(TFWeaponSlot_Secondary)+1, false); //Refill the player's ammo supply to whatever the weapon's max is.
+	}
+	//Shotguns
+	if (!StrContains(szClassname, "tf_weapon_shotgun") || !StrContains(szClassname, "tf_weapon_sentry_revenge")) //Check for Shotguns
+	{
+		switch (iWepIndex)
 		{
-			SetEntProp(iWeapon, Prop_Data, "m_iClip1", 8);
-			SetAmmo(client, iWeapon, 36);
+			case 425: //Family Business
+			{
+				SetEntProp(iWeapon, Prop_Send, "m_iClip1", 8);
+			}
+			case 997, 415: //Rescue Ranger, Reserve Shooter
+			{
+				SetEntProp(iWeapon, Prop_Send, "m_iClip1", 4);
+			}
+			case 141, 1004: //Frontier Justice
+			{
+				SetEntProp(iWeapon, Prop_Send, "m_iClip1", 3);
+			}
+			case 527: //Widowmaker
+			{
+				SetEntProp(iClient, Prop_Data, "m_iAmmo", 200, _, 3); //Sets Metal count to 200
+			}
+			default: //The default action for Shotguns
+			{
+				SetEntProp(iWeapon, Prop_Send, "m_iClip1", 6);
+			}
 		}
-		// Heavy, soldier, pyro, and engineer shotgun
-		case 9, 10, 11, 12, 199:
-		{
-			SetEntProp(iWeapon, Prop_Data, "m_iClip1", 6);
-			SetAmmo(client, iWeapon, 32);
-		}
- 		//Begger's bazooka
-		case 730:
-		{
-			SetAmmo(client,iWeapon,20);
-		}
-
+		if (TF2_GetPlayerClass(iClient) == TFClass_Engineer)
+			GivePlayerAmmo(iClient, 100, view_as<int>(TFWeaponSlot_Primary)+1, false); //Refill the player's ammo supply to whatever the weapon's max is.
+		else
+			GivePlayerAmmo(iClient, 100, view_as<int>(TFWeaponSlot_Secondary)+1, false); //Refill the player's ammo supply to whatever the weapon's max is.
+	}
+	// Ullapool caber
+	if (!StrContains(szClassname, "tf_weapon_stickbomb"))
+	{
+		SetEntProp(iWeapon, Prop_Send, "m_bBroken", 0);
+		SetEntProp(iWeapon, Prop_Send, "m_iDetonated", 0);
 	}
 }
 stock SetAmmo(client, iWeapon, iAmmo)
