@@ -658,6 +658,10 @@ public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:ang
 			ReSupply(client, g_iClientWeapons[client][0]);
 			ReSupply(client, g_iClientWeapons[client][1]);
 			ReSupply(client, g_iClientWeapons[client][2]);
+			
+			if (TF2_GetPlayerClass(client) == TFClass_Engineer){
+				SetEntProp(client, Prop_Data, "m_iAmmo", 200, 4, 3);
+			}
 		}
 		if (g_bHPRegen[client]){
 			new iMaxHealth = TF2_GetPlayerResourceData(client, TFResource_MaxHealth);
